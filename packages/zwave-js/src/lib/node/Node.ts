@@ -3484,6 +3484,8 @@ protocol version:      ${this.protocolVersion}`;
 
 	/** Handles the receipt of a MultilevelCC Set or Report */
 	private handleMultilevelSwitchCommand(command: MultilevelSwitchCC): void {
+		const endpoint = this.getEndpoint(command.endpointIndex ?? 0) ?? this;
+
 		if (command instanceof MultilevelSwitchCCSet) {
 			this.driver.controllerLog.logNode(this.id, {
 				endpoint: command.endpointIndex,
@@ -3506,7 +3508,7 @@ protocol version:      ${this.protocolVersion}`;
 			});
 			this.emit(
 				"notification",
-				this,
+				endpoint,
 				CommandClasses["Multilevel Switch"],
 				{
 					eventType: MultilevelSwitchCommand.StartLevelChange,
@@ -3522,7 +3524,7 @@ protocol version:      ${this.protocolVersion}`;
 			});
 			this.emit(
 				"notification",
-				this,
+				endpoint,
 				CommandClasses["Multilevel Switch"],
 				{
 					eventType: MultilevelSwitchCommand.StopLevelChange,
@@ -4121,13 +4123,20 @@ protocol version:      ${this.protocolVersion}`;
 				allowIdleReset = valueConfig.idle;
 			} else {
 				// This is an event
-				this.emit("notification", this, CommandClasses.Notification, {
-					type: command.notificationType,
-					event: value,
-					label: notificationConfig.name,
-					eventLabel: valueConfig.label,
-					parameters: command.eventParameters,
-				});
+				const endpoint =
+					this.getEndpoint(command.endpointIndex) ?? this;
+				this.emit(
+					"notification",
+					endpoint,
+					CommandClasses.Notification,
+					{
+						type: command.notificationType,
+						event: value,
+						label: notificationConfig.name,
+						eventLabel: valueConfig.label,
+						parameters: command.eventParameters,
+					},
+				);
 
 				// We may need to reset some linked states to idle
 				if (valueConfig.idleVariables?.length) {
@@ -5164,7 +5173,8 @@ protocol version:      ${this.protocolVersion}`;
 		}
 
 		// Notify listeners
-		this.emit("notification", this, CommandClasses["Entry Control"], {
+		const endpoint = this.getEndpoint(command.endpointIndex) ?? this;
+		this.emit("notification", endpoint, CommandClasses["Entry Control"], {
 			...pick(command, ["eventType", "dataType", "eventData"]),
 			eventTypeLabel: entryControlEventTypeLabels[command.eventType],
 			dataTypeLabel: getEnumMemberName(

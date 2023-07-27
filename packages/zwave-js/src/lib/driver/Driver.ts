@@ -2097,7 +2097,7 @@ export class Driver
 
 	/** This is called when a node emits a `"notification"` event */
 	private onNodeNotification: ZWaveNotificationCallback = (
-		node,
+		endpoint,
 		ccId,
 		ccArgs,
 	) => {
@@ -2138,7 +2138,8 @@ export class Driver
 			return;
 		}
 
-		this.controllerLog.logNode(node.id, {
+		this.controllerLog.logNode(endpoint.nodeId, {
+			endpoint: endpoint.index,
 			message: [prefix, ...details.map((d) => `  ${d}`)].join("\n"),
 		});
 	};

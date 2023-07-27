@@ -18,6 +18,7 @@ import type {
 	ValueRemovedArgs,
 	ValueUpdatedArgs,
 } from "@zwave-js/core/safe";
+import { type Endpoint } from "./Endpoint";
 import type { ZWaveNode } from "./Node";
 import type { RouteStatistics } from "./NodeStatistics";
 
@@ -108,7 +109,7 @@ export interface ZWaveNotificationCallbackArgs_MultilevelSwitchCC {
  * Parameter types for the MultilevelSwitch CC specific version of ZWaveNotificationCallback
  */
 export type ZWaveNotificationCallbackParams_MultilevelSwitchCC = [
-	node: ZWaveNode,
+	endpoint: Endpoint,
 	ccId: (typeof CommandClasses)["Multilevel Switch"],
 	args: ZWaveNotificationCallbackArgs_MultilevelSwitchCC,
 ];
@@ -130,7 +131,7 @@ export interface ZWaveNotificationCallbackArgs_NotificationCC {
  * Parameter types for the Notification CC specific version of ZWaveNotificationCallback
  */
 export type ZWaveNotificationCallbackParams_NotificationCC = [
-	node: ZWaveNode,
+	endpoint: Endpoint,
 	ccId: CommandClasses.Notification,
 	args: ZWaveNotificationCallbackArgs_NotificationCC,
 ];
@@ -148,7 +149,7 @@ export interface ZWaveNotificationCallbackArgs_PowerlevelCC {
  * Parameter types for the Powerlevel CC specific version of ZWaveNotificationCallback
  */
 export type ZWaveNotificationCallbackParams_PowerlevelCC = [
-	node: ZWaveNode,
+	endpoint: Endpoint,
 	ccId: CommandClasses.Powerlevel,
 	args: ZWaveNotificationCallbackArgs_PowerlevelCC,
 ];
@@ -167,7 +168,7 @@ export interface ZWaveNotificationCallbackArgs_EntryControlCC {
  * Parameter types for the Entry Control CC specific version of ZWaveNotificationCallback
  */
 export type ZWaveNotificationCallbackParams_EntryControlCC = [
-	node: ZWaveNode,
+	endpoint: Endpoint,
 	ccId: (typeof CommandClasses)["Entry Control"],
 	args: ZWaveNotificationCallbackArgs_EntryControlCC,
 ];
