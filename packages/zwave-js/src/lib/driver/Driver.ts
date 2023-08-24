@@ -73,6 +73,7 @@ import {
 	type SupervisionResult,
 	SupervisionStatus,
 	type SupervisionUpdateHandler,
+	TransactionState,
 	TransmitOptions,
 	TransmitStatus,
 	type ValueDB,
@@ -4528,6 +4529,7 @@ ${handlers.length} left`,
 		let msg: Message | undefined;
 
 		transaction.start();
+		transaction.notifyListener({ state: TransactionState.Active });
 
 		// Step through the transaction as long as it gives us a next message
 		while ((msg = await transaction.generateNextMessage(prevResult))) {
@@ -4592,6 +4594,10 @@ ${handlers.length} left`,
 							// This transaction was aborted by the driver due to a controller timeout.
 							// Rejections, re-queuing etc. have been handled, so just drop it silently and
 							// continue with the next message
+							transaction.notifyListener({
+								state: TransactionState.Failed,
+								reason: "Aborted due to controller timeout",
+							});
 							return;
 						} else if (
 							isSendData(msg)
@@ -4620,12 +4626,17 @@ ${handlers.length} left`,
 					}
 
 					// Sending the command failed, reject the transaction
+					transaction.notifyListener({
+						state: TransactionState.Failed,
+						reason: zwError.message,
+					});
 					throw zwError;
 				}
 			}
 		}
 
-		// This transaction is finished, try the next one
+		// This transaction completed successfully, try the next one
+		transaction.notifyListener({ state: TransactionState.Completed });
 	}
 
 	/** Handles sequencing of queued Serial API commands */
@@ -4898,6 +4909,7 @@ ${handlers.length} left`,
 			priority: options.priority,
 			parts: generator,
 			promise: resultPromise,
+			listener: options.onProgress,
 		});
 
 		// Configure its options
@@ -4917,6 +4929,7 @@ ${handlers.length} left`,
 		} else {
 			this.queue.add(transaction);
 		}
+		transaction.notifyListener({ state: TransactionState.Queued });
 
 		// If the transaction should expire, start the timeout
 		let expirationTimeout: NodeJS.Timeout | undefined;
@@ -5560,6 +5573,12 @@ ${handlers.length} left`,
 				case "drop":
 					if (source === "queue") {
 						dropQueued.push(transaction);
+
+						// This transaction isn't active, so `executeTransaction` will not notify the listeners. Need to do it here.
+						transaction.notifyListener({
+							state: TransactionState.Failed,
+							reason: "The message was dropped",
+						});
 					} else {
 						stopActive = transaction;
 					}
@@ -5578,6 +5597,11 @@ ${handlers.length} left`,
 					this.resolveTransaction(transaction, reducerResult.message);
 					if (source === "queue") {
 						dropQueued.push(transaction);
+
+						// This transaction isn't active, so `executeTransaction` will not notify the listeners. Need to do it here.
+						transaction.notifyListener({
+							state: TransactionState.Completed,
+						});
 					} else {
 						stopActive = transaction;
 					}
@@ -5594,6 +5618,12 @@ ${handlers.length} left`,
 					);
 					if (source === "queue") {
 						dropQueued.push(transaction);
+
+						// This transaction isn't active, so `executeTransaction` will not notify the listeners. Need to do it here.
+						transaction.notifyListener({
+							state: TransactionState.Failed,
+							reason: reducerResult.message,
+						});
 					} else {
 						stopActive = transaction;
 					}
@@ -5611,7 +5641,13 @@ ${handlers.length} left`,
 
 		// Now we know what to do with the transactions
 		queue.remove(...dropQueued, ...requeue);
-		queue.add(...requeue.map((t) => t.clone()));
+		const requeued = requeue.map((t) => t.clone());
+		queue.add(...requeued);
+
+		// Notify listeners about re-queued transactions
+		for (const t of requeued) {
+			t.notifyListener({ state: TransactionState.Queued });
+		}
 
 		// Abort ongoing SendData messages that should be dropped
 		if (isSendData(stopActive?.message)) {
