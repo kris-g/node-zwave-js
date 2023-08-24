@@ -2293,6 +2293,11 @@ export interface SendMessageOptions {
 // @public
 export const sensorCCs: readonly CommandClasses[];
 
+// Warning: (ae-missing-release-tag) "SerializableTXReport" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
+//
+// @public
+export type SerializableTXReport = Partial<Omit<TXReport, "numRepeaters">> & Pick<TXReport, "txTicks" | "routeSpeed">;
+
 // Warning: (ae-missing-release-tag) "serializeCacheValue" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
 // @public
@@ -2553,7 +2558,7 @@ export function tryParseDSKFromQRCodeString(qr: string): string | undefined;
 
 // Warning: (ae-missing-release-tag) "TXReport" is part of the package's API, but it is missing a release tag (@alpha, @beta, @public, or @internal)
 //
-// @public (undocumented)
+// @public
 export interface TXReport {
     ackChannelNo?: number;
     ackRepeaterRSSI?: [RSSI?, RSSI?, RSSI?, RSSI?];
