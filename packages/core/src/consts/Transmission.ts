@@ -197,7 +197,7 @@ export interface SendMessageOptions {
 	onTXReport?: (report: TXReport) => void;
 
 	/** Will be called when the transaction for this message progresses. */
-	onProgress?: TransactionProgressListener
+	onProgress?: TransactionProgressListener;
 }
 
 export enum EncapsulationFlags {
@@ -392,4 +392,3 @@ export type TransactionProgress = {
 export type TransactionProgressListener = (
 	progress: TransactionProgress,
 ) => void;
-
