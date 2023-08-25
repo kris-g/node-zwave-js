@@ -4529,7 +4529,7 @@ ${handlers.length} left`,
 		let msg: Message | undefined;
 
 		transaction.start();
-		transaction.notifyListener({ state: TransactionState.Active });
+		transaction.setProgress({ state: TransactionState.Active });
 
 		// Step through the transaction as long as it gives us a next message
 		while ((msg = await transaction.generateNextMessage(prevResult))) {
@@ -4594,7 +4594,7 @@ ${handlers.length} left`,
 							// This transaction was aborted by the driver due to a controller timeout.
 							// Rejections, re-queuing etc. have been handled, so just drop it silently and
 							// continue with the next message
-							transaction.notifyListener({
+							transaction.setProgress({
 								state: TransactionState.Failed,
 								reason: "Aborted due to controller timeout",
 							});
@@ -4626,17 +4626,13 @@ ${handlers.length} left`,
 					}
 
 					// Sending the command failed, reject the transaction
-					transaction.notifyListener({
-						state: TransactionState.Failed,
-						reason: zwError.message,
-					});
 					throw zwError;
 				}
 			}
 		}
 
 		// This transaction completed successfully, try the next one
-		transaction.notifyListener({ state: TransactionState.Completed });
+		transaction.setProgress({ state: TransactionState.Completed });
 	}
 
 	/** Handles sequencing of queued Serial API commands */
@@ -4929,7 +4925,7 @@ ${handlers.length} left`,
 		} else {
 			this.queue.add(transaction);
 		}
-		transaction.notifyListener({ state: TransactionState.Queued });
+		transaction.setProgress({ state: TransactionState.Queued });
 
 		// If the transaction should expire, start the timeout
 		let expirationTimeout: NodeJS.Timeout | undefined;
@@ -5441,6 +5437,11 @@ ${handlers.length} left`,
 			if (this.handleMissingNodeACK(transaction as any)) return;
 		}
 
+		transaction.setProgress({
+			state: TransactionState.Failed,
+			reason: error.message,
+		});
+
 		transaction.abort(error);
 	}
 
@@ -5575,7 +5576,7 @@ ${handlers.length} left`,
 						dropQueued.push(transaction);
 
 						// This transaction isn't active, so `executeTransaction` will not notify the listeners. Need to do it here.
-						transaction.notifyListener({
+						transaction.setProgress({
 							state: TransactionState.Failed,
 							reason: "The message was dropped",
 						});
@@ -5599,7 +5600,7 @@ ${handlers.length} left`,
 						dropQueued.push(transaction);
 
 						// This transaction isn't active, so `executeTransaction` will not notify the listeners. Need to do it here.
-						transaction.notifyListener({
+						transaction.setProgress({
 							state: TransactionState.Completed,
 						});
 					} else {
@@ -5620,7 +5621,7 @@ ${handlers.length} left`,
 						dropQueued.push(transaction);
 
 						// This transaction isn't active, so `executeTransaction` will not notify the listeners. Need to do it here.
-						transaction.notifyListener({
+						transaction.setProgress({
 							state: TransactionState.Failed,
 							reason: reducerResult.message,
 						});
@@ -5646,7 +5647,7 @@ ${handlers.length} left`,
 
 		// Notify listeners about re-queued transactions
 		for (const t of requeued) {
-			t.notifyListener({ state: TransactionState.Queued });
+			t.setProgress({ state: TransactionState.Queued });
 		}
 
 		// Abort ongoing SendData messages that should be dropped
